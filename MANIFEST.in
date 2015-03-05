@@ -2,3 +2,5 @@ include *.rst
 include *.ico
 include *.py
 include *.cmd
+include *.desktop
+include *.png

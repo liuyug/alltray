@@ -67,3 +67,13 @@ py2exe
 Icon
 -----
 http://www.iconarchive.com/show/nuoveXT-2-icons-by-saki/Apps-wheelchair-icon.html
+
+Screenshot
+----------
++ Window
+
+.. image:: screenshot_window.png
+
++ Ubuntu
+
+.. image:: screenshot_ubuntu.png
