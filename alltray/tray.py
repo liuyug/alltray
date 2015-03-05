@@ -23,7 +23,10 @@ class TrayDialog(QtGui.QDialog):
         self.settings = settings
         icon_path = settings.value('icon_path').toString()
         if icon_path.isEmpty():
-            icon = QtGui.QIcon(QtGui.QFileIconProvider().icon(QtCore.QFileInfo(sys.argv[0])))
+            if sys.platform == 'win32':
+                icon = QtGui.QIcon(QtGui.QFileIconProvider().icon(QtCore.QFileInfo(sys.argv[0])))
+            else:
+                icon = QtGui.QIcon.fromTheme('preferences-desktop-accessibility')
         else:
             icon = QtGui.QIcon(QtGui.QFileIconProvider().icon(QtCore.QFileInfo(icon_path)))
         self.setWindowIcon(icon)

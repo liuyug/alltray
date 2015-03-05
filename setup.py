@@ -2,6 +2,8 @@
 # -*- encoding:utf-8 -*-
 
 import os
+import sys
+import subprocess
 
 from distutils.core import setup
 from distutils.command import install_scripts
@@ -20,8 +22,14 @@ class post_install_scripts(install_scripts.install_scripts):
                     os.remove(new_name)
                 print('renaming %s -> %s' % (script, new_name))
                 os.rename(script, new_name)
+                cmd = ['sed', '-i', '-r', 's/Exec=.*$/Exec=%s/' % new_name.replace('/', '\/'), 'alltray.desktop']
+                print(' '.join(cmd))
+                subprocess.call(cmd)
         return
 
+data_files = []
+if sys.platform in ['linux', 'linux2']:
+    data_files.append(('share/applications', ['alltray.desktop']))
 
 setup(name='AllTray',
       version=__version__,
@@ -37,7 +45,8 @@ setup(name='AllTray',
           'alltray',
       ],
       requires=['pyqt4'],
+      data_files=data_files,
       cmdclass={
           'install_scripts': post_install_scripts,
-      }
+      },
       )
