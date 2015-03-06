@@ -12,8 +12,18 @@ if sys.platform == "win32":
     base = "Win32GUI"
 
 build_exe_options = {
-    'icon': 'Apps-wheelchair.ico',
 }
+
+bdist_mac_options = {
+    'iconfile': 'Apps-wheelchair.icns',
+}
+
+bdist_dmg_options = {
+}
+
+execute_scripts = [
+    Executable(script='alltray.py', icon='Apps-wheelchair.ico', base=base)
+]
 
 setup(name='AllTray',
       version=__version__,
@@ -28,6 +38,10 @@ setup(name='AllTray',
           'alltray',
       ],
       requires=['pyqt4'],
-      executables=[Executable('alltray.py', base=base)],
-      options={'build_exe': build_exe_options}
+      executables=execute_scripts,
+      options={
+          'build_exe': build_exe_options,
+          'bdist_mac': bdist_mac_options,
+          'bdist_dmg': bdist_dmg_options,
+      }
       )

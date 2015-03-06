@@ -34,8 +34,10 @@ example::
 
     alltray --config chinadns
 
-Pack Windows EXE file
+Pack execute file
 ---------------------
+For window, use cx_Freeze_
+For mac os x, use pyinstaller_
 
 cx_Freeze
 ~~~~~~~~~
@@ -43,23 +45,24 @@ cx_Freeze
 
     python cx_Freeze_setup.py bdist
 
-pyinstall
-~~~~~~~~~
+pyinstaller
+~~~~~~~~~~~
 
 1. install pywin32 from http://sourceforge.net/projects/pywin32/files/
 2. pip install pyinstaller
 3. [option] install upx from http://upx.sourceforge.net/
-4. Run ``pyinstaller --clean -i Apps-wheelchair.ico -w alltray.py``
+4. Run ``pyinstaller --clean -i Apps-wheelchair.icns -w alltray.py``
 
 Execute file will be found in "dist" directory.
 
 .. important::
 
     + The execute file only be exectuted in ASCII directory. No support other encoding directory. It just is pyinstaller bug.
-    + The single execute file could not be run! bug!
+    + The single execute file could not be run in window 64bit! bug!
 
 py2exe
 ~~~~~~~
+too old, please ignore it.
 ::
 
     python py2exe_setup.py py2exe

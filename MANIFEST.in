@@ -1,5 +1,6 @@
 include *.rst
 include *.ico
+include *.icns
 include *.py
 include *.cmd
 include *.desktop

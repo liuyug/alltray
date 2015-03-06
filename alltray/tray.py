@@ -25,8 +25,12 @@ class TrayDialog(QtGui.QDialog):
         if icon_path.isEmpty():
             if sys.platform == 'win32':
                 icon = QtGui.QIcon(QtGui.QFileIconProvider().icon(QtCore.QFileInfo(sys.argv[0])))
-            else:
+            # elif sys.platform == 'darwin':
+            #     icon = QtGui.QIcon('Apps-wheelchair.icns')
+            elif sys.platform == 'linux2':
                 icon = QtGui.QIcon.fromTheme('preferences-desktop-accessibility')
+            else:
+                icon = QtGui.QIcon('Apps-wheelchair.ico')
         else:
             icon = QtGui.QIcon(QtGui.QFileIconProvider().icon(QtCore.QFileInfo(icon_path)))
         self.setWindowIcon(icon)
