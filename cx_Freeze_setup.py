@@ -2,24 +2,49 @@
 # -*- encoding:utf-8 -*-
 
 import sys
+import plistlib
 
 from cx_Freeze import setup, Executable
 
 from alltray import __version__
 
-base = None
-if sys.platform == "win32":
-    base = "Win32GUI"
+plist = {
+    'CFBundleShortVersionString': __version__,
+    'CFBundleSignature': 'ALLT',
+    'CFBundleInfoDictionaryVersion': '6.0',
+    'CFBundleDisplayName': 'AllTray v%s' % __version__,
+    'CFBundleIconFile': 'icon.icns',
+    'CFBundleIdentifier': 'alltray.liuyug.com.github',
+    'CFBundleDevelopmentRegion': 'en-US',
+    'CFBundleExecutable': 'alltray',
+    'CFBundleName': 'AllTray',
+    'CFBundlePackageType': 'APPL',
+    'CFBundleVersion': __version__,
+    'NSHumanReadableCopyright': 'GNU GPLv3',
+}
 
 build_exe_options = {
 }
 
 bdist_mac_options = {
     'iconfile': 'Apps-wheelchair.icns',
+    'custom_info_plist': 'Info.plist',
 }
 
 bdist_dmg_options = {
 }
+
+
+base = None
+options = {}
+if sys.platform == "win32":
+    base = "Win32GUI"
+    options['build_exe'] = build_exe_options
+elif sys.platform == 'darwin':
+    plistlib.writePlist(plist, 'Info.plist')
+    options['bdist_mac'] = bdist_mac_options
+    options['bdist_dmg'] = bdist_dmg_options
+
 
 execute_scripts = [
     Executable(script='alltray.py', icon='Apps-wheelchair.ico', base=base)
@@ -39,9 +64,5 @@ setup(name='AllTray',
       ],
       requires=['pyqt4'],
       executables=execute_scripts,
-      options={
-          'build_exe': build_exe_options,
-          'bdist_mac': bdist_mac_options,
-          'bdist_dmg': bdist_dmg_options,
-      }
+      options=options,
       )

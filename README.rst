@@ -34,10 +34,10 @@ example::
 
     alltray --config chinadns
 
-Pack execute file
----------------------
+Pack execute or app file
+-------------------------
 For window, use cx_Freeze_
-For mac os x, use pyinstaller_
+For mac os x, still has some issue...
 
 cx_Freeze
 ~~~~~~~~~
