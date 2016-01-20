@@ -23,7 +23,12 @@ plist = {
     'NSHumanReadableCopyright': 'GNU GPLv3',
 }
 
+include_files = []
+include_files.append(['Apps-wheelchair.ico', 'Apps-wheelchair.ico'])
+include_files.append(['alltray.desktop', 'alltray.desktop'])
+
 build_exe_options = {
+    'include_files': include_files,
 }
 
 bdist_mac_options = {
@@ -62,7 +67,6 @@ setup(name='AllTray',
       packages=[
           'alltray',
       ],
-      requires=['pyqt4'],
       executables=execute_scripts,
       options=options,
       )

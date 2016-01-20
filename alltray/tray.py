@@ -10,83 +10,67 @@ import shlex
 import os.path
 from functools import partial
 
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 
 from alltray import __version__
 
 
-class TrayDialog(QtGui.QDialog):
+class TrayDialog(QtWidgets.QDialog):
     logThread = None
 
     def __init__(self, settings, parent=None):
         super(TrayDialog, self).__init__(parent)
         self.settings = settings
-        icon_path = settings.value('icon_path').toString()
-        if icon_path.isEmpty():
-            if sys.platform == 'win32':
-                icon = QtGui.QIcon(QtGui.QFileIconProvider().icon(QtCore.QFileInfo(sys.argv[0])))
-            # elif sys.platform == 'darwin':
-            #     icon = QtGui.QIcon('Apps-wheelchair.icns')
-            elif sys.platform == 'linux2':
-                icon = QtGui.QIcon.fromTheme('preferences-desktop-accessibility')
-            else:
-                icon = QtGui.QIcon('Apps-wheelchair.ico')
-        else:
-            icon = QtGui.QIcon(QtGui.QFileIconProvider().icon(QtCore.QFileInfo(icon_path)))
-        self.setWindowIcon(icon)
         self.setWindowTitle(self.tr('All Tray'))
-        self.setLayout(self.getLayout())
-        self.tray = QtGui.QSystemTrayIcon(self)
+
+    def create(self):
+        # widgets
+        self.settingWidget = self.getSettingWidget()
+        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Apply | QtWidgets.QDialogButtonBox.Close)
+        self.buttonBox.clicked.connect(self.applyCommand)
+        # layout
+        main_layout = QtWidgets.QVBoxLayout()
+        main_layout.addWidget(self.settingWidget)
+        main_layout.addWidget(self.buttonBox)
+        self.setLayout(main_layout)
+
+        self.tray = QtWidgets.QSystemTrayIcon(self)
         self.tray.setContextMenu(self.getMenu())
-        self.tray.setIcon(icon)
-        tooltip = settings.value('tooltip').toString()
-        if tooltip.isEmpty():
-            tooltip = self.tr('[All Tray] I\'m here!')
-        self.tray.setToolTip(tooltip)
+        self.tray.setIcon(self.windowIcon())
+        self.tray.setToolTip(self.general_ctl.tooltip.text())
         self.tray.activated.connect(self.trayActivated)
 
-        app_cmd = settings.value('app_cmd').toString()
-        self.general_ctl.icon_path.setText(icon_path)
-        self.general_ctl.app_path.appendPlainText(app_cmd)
-        self.general_ctl.tooltip.setText(tooltip)
-
-        app_run = settings.value('app_run').toBool()
-        self.general_ctl.app_run.setChecked(app_run)
-
-        if app_run:
+        if self.general_ctl.app_run.isChecked():
             self.tray.show()
 
-    def getLayout(self):
-        main_layout = QtGui.QVBoxLayout()
-        tabWidget = QtGui.QTabWidget(self)
-        self.general_ctl = GeneralWidget(self.settings, tabWidget)
+    def getSettingWidget(self):
+        tabWidget = QtWidgets.QTabWidget(self)
+        self.general_ctl = GeneralWidget(tabWidget, self.settings)
         self.log_ctl = LogWidget(tabWidget)
-        dlg = QtGui.QDialog(self)
-        about = AboutWidget(dlg)
-        about_layout = QtGui.QVBoxLayout()
+        # about diaglog
+        self.aboutDlg = QtWidgets.QDialog(self)
+        about = AboutWidget(self.aboutDlg)
+        about_layout = QtWidgets.QVBoxLayout()
         about_layout.addWidget(about)
         about_layout.addStretch(1)
-        dlg.setLayout(about_layout)
+        self.aboutDlg.setLayout(about_layout)
+        # add tab
         tabWidget.addTab(self.general_ctl, self.tr('General'))
         tabWidget.addTab(self.log_ctl, self.tr('Log'))
-        tabWidget.addTab(dlg, self.tr('About'))
-        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Apply | QtGui.QDialogButtonBox.Close)
-        self.buttonBox.clicked.connect(self.applyCommand)
-        main_layout.addWidget(tabWidget)
-        main_layout.addWidget(self.buttonBox)
-        return main_layout
+        tabWidget.addTab(self.aboutDlg, self.tr('About'))
+        return tabWidget
 
     def getMenu(self):
-        exit_action = QtGui.QAction(
+        exit_action = QtWidgets.QAction(
             self.tr('&Exit'), self, triggered=self.quit)
-        about_action = QtGui.QAction(
+        about_action = QtWidgets.QAction(
             self.tr('&About'), self, triggered=self.about)
-        show_action = QtGui.QAction(
+        show_action = QtWidgets.QAction(
             self.tr('&Show Alltray'),
             self,
-            triggered=partial(self.trayActivated, QtGui.QSystemTrayIcon.Trigger)
+            triggered=partial(self.trayActivated, QtWidgets.QSystemTrayIcon.Trigger)
         )
-        menu = QtGui.QMenu(self)
+        menu = QtWidgets.QMenu(self)
         menu.addAction(show_action)
         menu.addAction(about_action)
         menu.addSeparator()
@@ -95,8 +79,8 @@ class TrayDialog(QtGui.QDialog):
 
     def trayActivated(self, reason):
         if reason in (
-                QtGui.QSystemTrayIcon.Trigger,
-                QtGui.QSystemTrayIcon.DoubleClick):
+                QtWidgets.QSystemTrayIcon.Trigger,
+                QtWidgets.QSystemTrayIcon.DoubleClick):
             self.show()
 
     def closeEvent(self, event):
@@ -106,16 +90,20 @@ class TrayDialog(QtGui.QDialog):
             event.ignore()
 
     def applyCommand(self, button):
-        if self.buttonBox.buttonRole(button) == QtGui.QDialogButtonBox.RejectRole:
+        if self.buttonBox.buttonRole(button) == QtWidgets.QDialogButtonBox.RejectRole:
             self.close()
-        elif self.buttonBox.buttonRole(button) == QtGui.QDialogButtonBox.ApplyRole:
+        elif self.buttonBox.buttonRole(button) == QtWidgets.QDialogButtonBox.ApplyRole:
             icon_path = self.general_ctl.icon_path.text()
             app_cmd = self.general_ctl.app_path.toPlainText()
             tooltip = self.general_ctl.tooltip.text()
             self.saveSettings()
-            icon = QtGui.QFileIconProvider().icon(
-                QtCore.QFileInfo(icon_path))
+            # XXX: crash, why?
+            # icon = QtWidgets.QFileIconProvider().icon(
+            #     QtCore.QFileInfo(icon_path)
+            # )
+            icon = QtGui.QIcon(icon_path)
             self.setWindowIcon(icon)
+            self.tray.setIcon(icon)
             self.tray.setToolTip(tooltip)
             self.tray.show()
             self.hide()
@@ -135,7 +123,7 @@ class TrayDialog(QtGui.QDialog):
         if not app_cmd:
             self.log_ctl.append('no cmd')
             return
-        cmd = shlex.split(unicode(app_cmd.toUtf8(), encoding='utf8'))
+        cmd = shlex.split(app_cmd)
         if os.path.dirname(cmd[0]):
             cmd[0] = os.path.realpath(cmd[0])
         if self.logThread:
@@ -146,11 +134,11 @@ class TrayDialog(QtGui.QDialog):
         kwargs = {}
         kwargs['stdout'] = subprocess.PIPE
         kwargs['stderr'] = subprocess.PIPE
+        kwargs['universal_newlines'] = True
         kwargs['shell'] = False
         if sys.platform == 'win32':
             si = subprocess.STARTUPINFO()
             si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            si.dwFlags |= subprocess.STARTF_USESTDHANDLES
             kwargs['startupinfo'] = si
         self.process = subprocess.Popen(
             cmd,
@@ -173,29 +161,30 @@ class TrayDialog(QtGui.QDialog):
     def quit(self):
         self.tray.hide()
         self.killCommand()
-        QtGui.qApp.quit()
+        QtWidgets.qApp.quit()
 
 
-class GeneralWidget(QtGui.QWidget):
-    def __init__(self, settings, parent=None):
+class GeneralWidget(QtWidgets.QWidget):
+    def __init__(self, parent, settings):
         super(GeneralWidget, self).__init__(parent)
-        main_layout = QtGui.QVBoxLayout()
-        icon_folder = QtGui.QFileIconProvider().icon(QtGui.QFileIconProvider.Folder)
+        main_layout = QtWidgets.QVBoxLayout()
+        icon_folder = QtWidgets.QFileIconProvider().icon(QtWidgets.QFileIconProvider.Folder)
         # command line application don't has icon, so you may set any icon.
-        iconGroup = QtGui.QGroupBox(self.tr('Icon'))
-        hlayout = QtGui.QHBoxLayout()
-        self.icon_ctl = QtGui.QLabel()
-        self.icon_ctl.setPixmap(self.windowIcon().pixmap(32, 32))
-        self.icon_ctl.setFrameStyle(QtGui.QFrame.StyledPanel | QtGui.QFrame.Plain)
+        iconGroup = QtWidgets.QGroupBox(self.tr('Icon'))
+        hlayout = QtWidgets.QHBoxLayout()
+        self.icon_ctl = QtWidgets.QLabel()
+        icon = QtGui.QIcon(self.windowIcon())
+        self.icon_ctl.setPixmap(icon.pixmap(32, 32))
+        self.icon_ctl.setFrameStyle(QtWidgets.QFrame.StyledPanel | QtWidgets.QFrame.Plain)
         hlayout.addWidget(self.icon_ctl)
-        vlayout = QtGui.QVBoxLayout()
-        icon_label = QtGui.QLabel(self.tr('path:'))
+        vlayout = QtWidgets.QVBoxLayout()
+        icon_label = QtWidgets.QLabel(self.tr('path:'))
         vlayout.addWidget(icon_label)
-        self.icon_path = QtGui.QLineEdit()
-        icon_browser = QtGui.QPushButton(icon_folder, '')
+        self.icon_path = QtWidgets.QLineEdit()
+        icon_browser = QtWidgets.QPushButton(icon_folder, '')
         icon_browser.setFlat(True)
         icon_browser.clicked.connect(self.iconBrowser)
-        h_layout = QtGui.QHBoxLayout()
+        h_layout = QtWidgets.QHBoxLayout()
         h_layout.addWidget(self.icon_path)
         h_layout.addWidget(icon_browser)
         h_layout.setStretch(0, 1)
@@ -203,12 +192,12 @@ class GeneralWidget(QtGui.QWidget):
         hlayout.addLayout(vlayout)
         iconGroup.setLayout(hlayout)
 
-        appGroup = QtGui.QGroupBox(self.tr('Application'))
-        vlayout = QtGui.QVBoxLayout()
-        hlayout = QtGui.QHBoxLayout()
-        app_label = QtGui.QLabel(self.tr('path:'))
-        self.app_path = QtGui.QPlainTextEdit()
-        app_browser = QtGui.QPushButton(icon_folder, '')
+        appGroup = QtWidgets.QGroupBox(self.tr('Application'))
+        vlayout = QtWidgets.QVBoxLayout()
+        hlayout = QtWidgets.QHBoxLayout()
+        app_label = QtWidgets.QLabel(self.tr('path:'))
+        self.app_path = QtWidgets.QPlainTextEdit()
+        app_browser = QtWidgets.QPushButton(icon_folder, '')
         app_browser.setFlat(True)
         app_browser.clicked.connect(self.applicationBrowser)
         hlayout.addWidget(app_label)
@@ -219,14 +208,26 @@ class GeneralWidget(QtGui.QWidget):
         vlayout.setStretch(1, 1)
         appGroup.setLayout(vlayout)
 
-        tooltipGroup = QtGui.QGroupBox(self.tr('Tooltip'))
-        vlayout = QtGui.QVBoxLayout()
-        self.tooltip = QtGui.QLineEdit()
+        tooltipGroup = QtWidgets.QGroupBox(self.tr('Tooltip'))
+        vlayout = QtWidgets.QVBoxLayout()
+        self.tooltip = QtWidgets.QLineEdit()
         vlayout.addWidget(self.tooltip)
         tooltipGroup.setLayout(vlayout)
 
-        self.app_run = QtGui.QCheckBox(self.tr('Run directly, not show dialog.'))
-        self.app_run.setChecked(False)
+        self.app_run = QtWidgets.QCheckBox(self.tr('Run directly, not show dialog.'))
+
+        app_cmd = settings.value('app_cmd', '', type=str)
+        icon_path = settings.value('icon_path', '', type=str)
+        self.icon_path.setText(icon_path)
+        self.app_path.appendPlainText(app_cmd)
+        tooltip = settings.value(
+            'tooltip',
+            self.tr('[All Tray] I\'m here!'),
+            type=str
+        )
+        self.tooltip.setText(tooltip)
+        app_run = settings.value('app_run', False, type=bool)
+        self.app_run.setChecked(app_run)
 
         main_layout.addWidget(iconGroup)
         main_layout.addWidget(appGroup)
@@ -236,7 +237,7 @@ class GeneralWidget(QtGui.QWidget):
         self.setLayout(main_layout)
 
     def getFilePath(self):
-        file_path = QtGui.QFileDialog.getOpenFileName(
+        file_path = QtWidgets.QFileDialog.getOpenFileName(
             self,
             self.tr('Selected file'),
             '',
@@ -245,27 +246,27 @@ class GeneralWidget(QtGui.QWidget):
         return file_path
 
     def iconBrowser(self):
-        path = self.getFilePath()
-        self.icon_path.setText(path)
-        icon = QtGui.QFileIconProvider().icon(
-            QtCore.QFileInfo(path))
+        paths = self.getFilePath()
+        self.icon_path.setText(paths[0])
+        icon = QtWidgets.QFileIconProvider().icon(
+            QtCore.QFileInfo(paths[0]))
         self.icon_ctl.setPixmap(icon.pixmap(32, 32))
 
     def applicationBrowser(self):
-        path = self.getFilePath()
-        self.app_path.appendPlainText(path)
+        paths = self.getFilePath()
+        self.app_path.appendPlainText(paths[0])
 
 
-class LogWidget(QtGui.QWidget):
+class LogWidget(QtWidgets.QWidget):
     appended = QtCore.pyqtSignal(str)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent):
         super(LogWidget, self).__init__(parent)
         self.mono_font = QtGui.QFont('Monospace')
-        main_layout = QtGui.QVBoxLayout()
-        self.text_ctl = QtGui.QPlainTextEdit(self)
+        main_layout = QtWidgets.QVBoxLayout()
+        self.text_ctl = QtWidgets.QPlainTextEdit(self)
         self.text_ctl.setFont(self.mono_font)
-        self.text_ctl.setLineWrapMode(QtGui.QPlainTextEdit.NoWrap)
+        self.text_ctl.setLineWrapMode(QtWidgets.QPlainTextEdit.NoWrap)
         self.text_ctl.setReadOnly(True)
         main_layout.addWidget(self.text_ctl)
         self.setLayout(main_layout)
@@ -283,31 +284,32 @@ class LogWidget(QtGui.QWidget):
         self.text_ctl.appendPlainText(line)
 
 
-class AboutWidget(QtGui.QWidget):
-    def __init__(self, parent=None):
+class AboutWidget(QtWidgets.QWidget):
+    def __init__(self, parent):
         super(AboutWidget, self).__init__(parent)
-        hlayout = QtGui.QHBoxLayout()
+        hlayout = QtWidgets.QHBoxLayout()
         hlayout.addStretch(1)
-        icon_ctl = QtGui.QLabel()
-        icon_ctl.setPixmap(self.windowIcon().pixmap(32, 32))
+        icon_ctl = QtWidgets.QLabel()
+        app_icon = QtWidgets.QApplication.windowIcon()
+        icon_ctl.setPixmap(app_icon.pixmap(32, 32))
         hlayout.addWidget(icon_ctl)
-        vlayout = QtGui.QVBoxLayout()
-        vlayout.addWidget(QtGui.QLabel(
+        vlayout = QtWidgets.QVBoxLayout()
+        vlayout.addWidget(QtWidgets.QLabel(
             self.tr('All Tray v%s' % __version__)
         ))
-        vlayout.addWidget(QtGui.QLabel(self.tr('Tray all application.')))
+        vlayout.addWidget(QtWidgets.QLabel(self.tr('Tray all application.')))
         hlayout.addLayout(vlayout)
         hlayout.addStretch(1)
         self.setLayout(hlayout)
 
 
-class AboutDialog(QtGui.QDialog):
-    def __init__(self, parent=None):
+class AboutDialog(QtWidgets.QDialog):
+    def __init__(self, parent):
         super(AboutDialog, self).__init__(parent)
         self.setWindowTitle(self.tr('All Tray'))
-        main_layout = QtGui.QVBoxLayout()
+        main_layout = QtWidgets.QVBoxLayout()
         main_layout.addWidget(AboutWidget(self))
-        buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok)
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok)
         buttonBox.accepted.connect(self.close)
         main_layout.addWidget(buttonBox)
         self.setLayout(main_layout)
@@ -345,8 +347,10 @@ class LogThread():
         sys.stdout, sys.stderr block stream sometimes
         """
         def tee_pipe(pipe, log):
+            count = 0
+            # for line in pipe.readline():
             for line in iter(pipe.readline, ''):
-                line = unicode(line, self.system_encoding)
+                count += 1
                 log(line.rstrip('\n\r'))
 
         self.t1 = threading.Thread(target=tee_pipe, args=(self.process.stdout, self.log))
@@ -376,17 +380,40 @@ def main():
     if args.tooltip:
         settings.setValue('tooltip', args.tooltip)
 
-    app = QtGui.QApplication(sys.argv)
-    if not QtGui.QSystemTrayIcon.isSystemTrayAvailable():
-        QtGui.QMessageBox.critical(
+    # qt path
+    qt_path = os.path.join(os.path.dirname(QtCore.__file__))
+    QtWidgets.QApplication.addLibraryPath(qt_path)
+    QtWidgets.QApplication.addLibraryPath(os.path.join(qt_path, 'plugins'))
+
+    app = QtWidgets.QApplication(sys.argv)
+    if not QtWidgets.QSystemTrayIcon.isSystemTrayAvailable():
+        QtWidgets.QMessageBox.critical(
             None,
             "Sorry",
             "I couldn't detect any system tray on this system."
         )
         sys.exit(1)
+    app_icon = QtGui.QIcon('Apps-wheelchair.ico')
+    app.setWindowIcon(app_icon)
+    icon_path = settings.value('icon_path', '', type=str)
+    if not icon_path:
+        if sys.platform == 'win32':
+            icon = app_icon
+            # icon = QtWidgets.QFileIconProvider().icon(QtCore.QFileInfo(sys.argv[0]))
+        # elif sys.platform == 'darwin':
+        #     icon = QtGui.QIcon('Apps-wheelchair.icns')
+        elif sys.platform == 'linux2':
+            icon = QtGui.QIcon.fromTheme('preferences-desktop-accessibility')
+        else:
+            icon = QtGui.QIcon('Apps-wheelchair.ico')
+    else:
+        # icon = QtWidgets.QFileIconProvider().icon(QtCore.QFileInfo(icon_path))
+        icon = QtGui.QIcon(icon_path)
     win = TrayDialog(settings)
-    app_cmd = settings.value('app_cmd').toString()
-    app_run = settings.value('app_run').toBool()
+    win.setWindowIcon(icon)
+    win.create()
+    app_cmd = settings.value('app_cmd', type=str)
+    app_run = settings.value('app_run', type=bool)
     if app_run:
         win.hide()
         win.runCommand(app_cmd)
