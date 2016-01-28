@@ -11,6 +11,7 @@ import os.path
 from functools import partial
 
 from PyQt5 import QtGui, QtCore, QtWidgets
+import psutil
 
 from alltray import __version__
 
@@ -125,10 +126,9 @@ class TrayDialog(QtWidgets.QDialog):
         cmd = shlex.split(app_cmd)
         if os.path.dirname(cmd[0]):
             cmd[0] = os.path.realpath(cmd[0])
-        if self.logThread:
-            self.process.kill()
-            self.logThread.kill()
-            self.logThread.join()
+        # kill current process
+        self.killCommand()
+        # start new process
         self.log_ctl.append(' '.join(cmd))
         kwargs = {}
         kwargs['stdout'] = subprocess.PIPE
@@ -148,7 +148,13 @@ class TrayDialog(QtWidgets.QDialog):
 
     def killCommand(self):
         if self.logThread:
-            self.process.kill()
+            try:
+                parent = psutil.Process(self.process.pid)
+                for child in parent.children(recursive=True):
+                    child.kill()
+                parent.kill()
+            except Exception as err:
+                self.log_ctl.append('The command: %s' % err)
             self.logThread.kill()
             self.logThread.join()
             self.logThread = None
