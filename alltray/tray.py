@@ -106,7 +106,6 @@ class TrayDialog(QtWidgets.QDialog):
             self.tray.setIcon(icon)
             self.tray.setToolTip(tooltip)
             self.tray.show()
-            self.hide()
             self.runCommand(app_cmd)
 
     def saveSettings(self):
