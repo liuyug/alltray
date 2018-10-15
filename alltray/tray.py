@@ -427,24 +427,28 @@ def main():
             "I couldn't detect any system tray on this system."
         )
         sys.exit(1)
-    app_icon = QtGui.QIcon('Apps-wheelchair.ico')
-    app.setWindowIcon(app_icon)
-    icon_path = settings.value('icon_path', '', type=str)
-    if not icon_path:
-        if sys.platform == 'win32':
-            icon = app_icon
-            # icon = QtWidgets.QFileIconProvider().icon(QtCore.QFileInfo(sys.argv[0]))
-        # elif sys.platform == 'darwin':
-        #     icon = QtGui.QIcon('Apps-wheelchair.icns')
-        elif sys.platform == 'linux2':
-            icon = QtGui.QIcon.fromTheme('preferences-desktop-accessibility')
-        else:
-            icon = QtGui.QIcon('Apps-wheelchair.ico')
-    else:
-        # icon = QtWidgets.QFileIconProvider().icon(QtCore.QFileInfo(icon_path))
-        icon = QtGui.QIcon(icon_path)
+
     win = TrayDialog(settings)
-    win.setWindowIcon(icon)
+
+    icon_path = settings.value('icon_path', '', type=str)
+    if icon_path:
+        app_icon = QtGui.QIcon(icon_path)
+        win.setWindowIcon(app_icon)
+    else:
+        if sys.platform == 'win32':
+            icon = win.windowIcon()
+            if icon.isNull():
+                app_icon = QtGui.QIcon('Apps-wheelchair.ico')
+                win.setWindowIcon(app_icon)
+        elif sys.platform == 'darwin':
+            app_icon = QtGui.QIcon('Apps-wheelchair.icns')
+            win.setWindowIcon(app_icon)
+        elif sys.platform == 'linux2':
+            app_icon = QtGui.QIcon.fromTheme('preferences-desktop-accessibility')
+            win.setWindowIcon(app_icon)
+        else:
+            app_icon = QtGui.QIcon('Apps-wheelchair.ico')
+            win.setWindowIcon(app_icon)
     win.create()
     app_run = settings.value('app_run', type=bool)
     if app_run:
